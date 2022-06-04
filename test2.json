@@ -1,0 +1,13 @@
+{"title":"Make a movie of DEA","width":270,"height":140,
+ "elements":[
+  {"type":"label","text":"日付:","baseline":"FileID","name":"Label1"},
+  {"type":"date","min":"2011-10-14","max":"today","upper":"window","left":"Label1","name":"FileID"},
+  {"type":"label","text":"個体番号:","baseline":"FileID","right":"ID","name":"Label2"},
+  {"type":"digits","fraction":0,"integer":2,"value":1,"min":1,"max":20,
+    "baseline":"FileID","right":"window","name":"ID"},
+  {"type":"radio buttons","choice":["Square","*Reel","YouTube"],"columns":3,
+    "upper":"FileID","name":"Choice"},
+  {"type":"checkbox","allow mixed":true,"title":"I like it.","upper":"Choice"},
+  {"type":"push button","title":"Cancel","width":80},
+  {"type":"push button","title":"OK","width":80,"right":"window"},
+ ]}

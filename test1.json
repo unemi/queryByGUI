@@ -1,0 +1,11 @@
+{
+	"title":"Qury GUI Test",
+	"elements":[
+		{"type":"label", "text":"Please input your coice.", "upper":"window", "name":"message"},
+		{"type":"push button", "name":"OK", "title":"OK", "width":80, "right":"window"},
+		{"type":"digits", "title":"Test", "name":"test#1", "upper":"message", "fraction":0},
+		{"type":"radio buttons", "name":"myChoice", "choice":["Apple","*Orange","Banana"], "upper":"test#1"},
+		{"type":"popup button", "choice":["Dog","Cat","Rabit","Rat"], "upper":"test#1", "left":"myChoice"},
+		{"type":"slider", "min":0, "max":100, "value":50, "left":"window", "right":"OK", "lower":"window"}
+	]
+}
