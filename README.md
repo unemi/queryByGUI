@@ -13,7 +13,7 @@ When the user click one of the [push buttons](#pushButton) in the window,
 the process of queryByGUI stops after it outputs a text to the standard output that
 expresses a list of name-value pairs.
 
-<div style="text-align:right">June 4, 2022.</div>
+<div style="text-align:right">Created in June 4, 2022. Modified in June 5, 2022.</div>
 
 By [Tatsuo Unemi](http://www.intlab.soka.ac.jp/~unemi/),
 Department of Information Systems Science,
@@ -22,6 +22,47 @@ Department of Information Systems Science,
 Table of Contents
 --
 [toc]
+
+## How to install
+`queryByGUI` is an executable file in the form of universal binary for both
+Intel x86\_64 and Apple arm64 architectures to be launched from shell command line.
+You can find the file under `bin` directory of this repository.
+Copy or move the file into an appropriate directory in the local storage
+of your machine, such as `/usr/local/bin`, if you want to make it
+easier to invoke it just by typing-in `queryByGUI` in your `Terminal`.
+
+If you want to modify the source code for your own usage,
+make a clone of this repository into a local directory of your computer,
+and then open the project package `queryByGUI.xcodeproj` using `Xcode`.
+After your edit and test, the following command is effective
+to install the executable file into `/usr/local/bin` directory.
+Note that *Xcode command line tools* must be installed in your computer
+before issuing `xcodebuild` command.
+
+	cd .../queryByGUI	# go to the top directory of the copy of this repository.
+	xcodebuild -target queryByGUI archive
+	mv -f /tmp/queryByGUI.dst/usr/local/bin/queryByGUI /usr/local/bin/
+	rm -rf /tmp/queryByGUI.dst build	# if you want to clean up the working files.
+
+
+<a name=commandOptions></a>
+## Command options
+`queryByGUI` command can be followed by optional arguments separated by white spaces.
+The possible options are as follows.
+
+- `--version` shows a text string of version information, then quits immediately.
+- `-F <sep>` makes `<sep>` as the separator between name and value for the result
+[output](#output).
+- `-R <sep>` makes `<sep>` as the separator between pairs for the result
+[output](#output).
+
+The separator must be a string shorter than eight ASCII characters.
+You can include control characters by escape sequence with backslash character (`\`),
+such as `\a`, `\b`, `\f`, `\n`, `\r`, and `\t` for bell, backspace, form feed, new line,
+and carriage return respectively. An arbitrary seven bits code is allowed by an octal
+representation of three digits after a backslash, for example, `\033` is the escape code.
+Note that backslash character must be escaped in shell script using double backslash
+or single quotation marks.
 
 ## Specification of GUI arrangement
 
@@ -186,13 +227,15 @@ is neighboring with in both vertical and horizontal dimensions.
 
 |string|value type|value|default value|
 |-----|-----|-----|-----|
-|`"width"`|number|element width|natural size|
-|`"height"`|number|element height|natural size|
-|`"left"`|string|`"window"` or a name of another element|`window`|
-|`"right"`|string|`"window"` or a name of another element|none|
-|`"lower"`|string|`"window"` or a name of another element|`window`|
-|`"upper"`|string|`"window"` or a name of another element|none|
+|`"width"`|number/string|absolute width or another element's name|natural size|
+|`"height"`|number/string|absolute height or another element's name|natural size|
+|`"left"`|string|`"window"` or another element's name|`window`|
+|`"right"`|string|`"window"` or another element's name|none|
+|`"lower"`|string|`"window"` or another element's name|`window`|
+|`"upper"`|string|`"window"` or another element's name|none|
 |`"baseline"`|string|a name of another element|none|
+|`"align left"`|string|another element's name|none|
+|`"align right"`|string|another element's name|none|
 
 If you specify both `left` and `right` but not `width`,
 queryByGUI assumes the width is flexible to set the positions of
@@ -204,14 +247,25 @@ as the vertical position of text baselines of them are same.
 When there is no element of specified name, queryByGUI outputs
 an error message and quits immediately.
 When the specification is redundant, queryByGUI uses items
-of higher priorities in the order of the above table,
-`width` is the highest, and `baseline` is the lowest.
+in unknown order, then some items are ignored.
 
+When the value for `width` is a name of another element,
+the width of *core object* in the element is adjusted to the same
+dimension with the core object of the referred element.
+`height`, `align left`, and `align right` also work in the same ways. 
+Core object is the main part of element, for example,
+the title is ignored in the cases of
+text, digits, date, time, popup button, and slider.
+Stepper for digits and digits for slider are also ignored.
+
+<a name=output></a>
 ## Output text
-The output text from queryByGUI is a sequence of lines,
-in which each line is colon-separated name-value pair.
-The last line indicates which push button was clicked,
+The output text from queryByGUI is a sequence of name-value pairs.
+The last pair in the sequence indicates which push button was clicked,
 for example, `Clicked:OK` when `OK` button was clicked.
+In default, the separator between name and value is colon (`:`),
+and the separator between pairs is newline (`\n`).
+You can change these separators by [command options](#commandOptions).
 
 ## Example
 

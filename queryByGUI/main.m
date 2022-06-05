@@ -10,6 +10,10 @@
 #define PADDING 20
 #define SPACING 8
 #define EXSPACE 2.5
+#define MAX_SEP_LEN 7
+
+char keyValueSep[MAX_SEP_LEN + 1] = {':', 0};
+char recordSep[MAX_SEP_LEN + 1] = {'\n', 0};
 
 void error_return(NSString *msg) {
 	fprintf(stderr, "%s\n", msg.UTF8String);
@@ -59,29 +63,30 @@ typedef struct {
 @interface PlacedInfo : NSObject
 @property AnchorsInfo anc;
 @property NSView *object;
-@property NSString *(^getValueBlock)(id);
+@property NSObject *(^getValueBlock)(id);
 @property NSDictionary *properties;
 @property (readonly) NSString *name;
 @end
 @implementation PlacedInfo
-- (instancetype)initWithObject:(NSView *)obj block:(NSString *(^)(id))block {
+- (instancetype)initWithObject:(NSView *)obj block:(NSObject *(^)(id))block {
 	if ((self = [super init]) == nil) return nil;
 	_object = obj;
 	_getValueBlock = block;
 	return self;
 }
-+ (PlacedInfo *)infoWithObject:(NSView *)obj block:(NSString *(^)(id))block {
-	return [PlacedInfo.alloc initWithObject:obj block:block];
-}
 - (CGFloat)baselineOffsetFromBottom {
 	return self.object.baselineOffsetFromBottom;
+}
+- (NSRect)coreFrame {
+	return [_object alignmentRectForFrame:_object.frame];
+}
+- (void)setCoreFrame:(NSRect)frame {
+	_object.frame = [_object frameForAlignmentRect:frame];
 }
 - (NSRect)frame {
 	return [_object alignmentRectForFrame:_object.frame];
 }
-- (void)setFrame:(NSRect)frame {
-	_object.frame = [_object frameForAlignmentRect:frame];
-}
+- (void)setFrame:(NSRect)frame { self.coreFrame = frame; }
 - (NSString *)setupName {
 	NSString *nm = _properties[@"name"];
 	if (nm == nil) {
@@ -112,7 +117,7 @@ typedef struct {
 @implementation ExtPlacedInfo
 static NSTextField *mk_digits_text(NSDictionary *, NSSlider *);
 - (instancetype)initWithObject:(NSView *)obj
-	itemInfo:(NSDictionary *)item block:(NSString *(^)(id))block {
+	itemInfo:(NSDictionary *)item block:(NSObject *(^)(id))block {
 	if ((self = [super initWithObject:obj block:block]) == nil) return nil;
 	NSRect oRct = [self.object alignmentRectForFrame:self.object.frame];
 	NSString *title = item[@"title"];
@@ -164,11 +169,11 @@ static void shift_view(NSView *view, NSSize shift) {
 	NSPoint pt = view.frame.origin;
 	view.frameOrigin = (NSPoint){pt.x + shift.width, pt.y + shift.height};
 }
-- (void)setFrame:(NSRect)frame {
-	NSSize trans = {frame.origin.x - alignRect.origin.x,
-			frame.origin.y - alignRect.origin.y},
-		resize = {frame.size.width - alignRect.size.width,
-			frame.size.height - alignRect.size.height};
+- (void)modifyFrameFrom:(NSRect)orgFrm to:(NSRect)newFrm {
+	NSSize trans = {newFrm.origin.x - orgFrm.origin.x,
+			newFrm.origin.y - orgFrm.origin.y},
+		resize = {newFrm.size.width - orgFrm.size.width,
+			newFrm.size.height - orgFrm.size.height};
 	NSRect frm = self.object.frame;
 	frm.origin.x += trans.width; frm.origin.y += trans.height;
 	frm.size.width += resize.width; frm.size.height += resize.height;
@@ -178,7 +183,15 @@ static void shift_view(NSView *view, NSSize shift) {
 		trans.width += resize.width;
 		shift_view(_extra, trans);
 	}
-	alignRect = frame;
+	alignRect.origin.x += trans.width; alignRect.origin.y += trans.height;
+	alignRect.size.width += resize.width; alignRect.size.height += resize.height;
+}
+- (void)setFrame:(NSRect)frame {
+	[self modifyFrameFrom:alignRect to:frame];
+}
+- (NSRect)coreFrame { return super.coreFrame; }
+- (void)setCoreFrame:(NSRect)frame {
+	[self modifyFrameFrom:self.coreFrame to:frame];
 }
 - (void)placeItInParentView:(NSView *)parent {
 	[parent addSubview:self.object];
@@ -202,10 +215,11 @@ static void shift_view(NSView *view, NSSize shift) {
 }
 - (void)ok:(NSButton *)sender {
 	for (PlacedInfo *item in _controls) {
-		NSString *value = item.getValueBlock(item.object);
-		printf("%s:%s\n", item.name.UTF8String, value.UTF8String);
+		NSObject *value = item.getValueBlock(item.object);
+		printf("%s%s%s%s", item.name.UTF8String,
+			keyValueSep, value.description.UTF8String, recordSep);
 	}
-	printf("Clicked:%s\n", sender.title.UTF8String);
+	printf("Clicked%s%s%s", keyValueSep, sender.title.UTF8String, recordSep);
 	[NSApp terminate:nil];
 }
 - (void)dummyAction:(id)sender {}
@@ -220,7 +234,7 @@ static void shift_view(NSView *view, NSSize shift) {
 		if (txt.stringValue.length == 0) { ready = NO; break; }
 	_OKButton.enabled = ready;
 }
-- (void)controlTextDidEndEditing:(NSNotification *)notification {
+- (void)controlTextDidChange:(NSNotification *)notification {
 	[self checkMandatoryTexts];
 }
 @end
@@ -239,13 +253,13 @@ static NSString *get_title(NSDictionary *item) {
 	return title;
 }
 static PlacedInfo *mk_placed_info(NSDictionary *item, NSView *obj,
-	NSArray<NSString *> *allowedExtra, NSString *(^block)(id)) {
+	NSArray<NSString *> *allowedExtra, NSObject *(^block)(id)) {
 	BOOL hasExtra = NO;
 	for (NSString *exKey in allowedExtra)
 		if (item[exKey] != nil) { hasExtra = YES; break; }
 	return hasExtra?
 		[ExtPlacedInfo.alloc initWithObject:obj itemInfo:item block:block] :
-		[PlacedInfo infoWithObject:obj block:block];
+		[PlacedInfo.alloc initWithObject:obj block:block];
 }
 PlacedInfo *mk_push_button(NSDictionary *item, BOOL *buttonIncluded, NSButton **OKBtn) {
 	NSString *title = get_title(item);
@@ -255,7 +269,7 @@ PlacedInfo *mk_push_button(NSDictionary *item, BOOL *buttonIncluded, NSButton **
 		if ([title isEqualToString:@"OK"]) *OKBtn = btn;
 		*buttonIncluded = YES;
 	}
-	return [PlacedInfo infoWithObject:btn block:nil];
+	return [PlacedInfo.alloc initWithObject:btn block:nil];
 }
 PlacedInfo *mk_checkbox(NSDictionary *item) {
 	NSString *title = get_title(item);
@@ -268,7 +282,7 @@ PlacedInfo *mk_checkbox(NSDictionary *item) {
 			NSControlStateValueOff;
 	if ((str = item[@"allow mixed"]) != nil)
 		btn.allowsMixedState = str.boolValue;
-	return [PlacedInfo infoWithObject:btn block:^(id btn) {
+	return [PlacedInfo.alloc initWithObject:btn block:^(id btn) {
 		switch (((NSButton *)btn).state) {
 			case NSControlStateValueOn: return @"on";
 			case NSControlStateValueOff: return @"off";
@@ -279,7 +293,7 @@ PlacedInfo *mk_checkbox(NSDictionary *item) {
 PlacedInfo *mk_label(NSDictionary *item) {
 	NSString *text = item[@"text"];
 	if (text == nil) text = @"";
-	return [PlacedInfo infoWithObject:[NSTextField labelWithString:text] block:nil];
+	return [PlacedInfo.alloc initWithObject:[NSTextField labelWithString:text] block:nil];
 }
 PlacedInfo *mk_text(NSDictionary *item) {
 	NSString *text = item[@"text"];
@@ -330,7 +344,7 @@ static NSTextField *mk_digits_text(NSDictionary *item, NSSlider *mother) {
 }
 PlacedInfo *mk_digits(NSDictionary *item) {
 	return mk_placed_info(item, mk_digits_text(item, nil), @[@"title", @"stepper"],
-		^(id dgt) { return @(((NSTextField *)dgt).doubleValue).stringValue; });
+		^(id dgt) { return @(((NSTextField *)dgt).doubleValue); });
 }
 static PlacedInfo *mk_date_time(NSDictionary *item, NSDatePickerElementFlags elements,
 	NSDate *(strToDate)(NSString *), NSDateFormatter *format) {
@@ -360,7 +374,7 @@ PlacedInfo *mk_slider(NSDictionary *item) {
 	if ((num = item[@"value"]) != nil) sld.doubleValue = num.doubleValue;
 	[sld sizeToFit];
 	return mk_placed_info(item, sld, @[@"title", @"digits"],
-		^(id sld) { return @([sld doubleValue]).stringValue; });
+		^(id sld) { return @([sld doubleValue]); });
 }
 PlacedInfo *mk_popup_button(NSDictionary *item) {
 	NSArray<NSString *> *choice = item[@"choice"];
@@ -420,13 +434,43 @@ PlacedInfo *mk_radio_buttons(NSDictionary *item) {
 		}
 		btnFrm.origin.x += btnW[col] + SPACING;
 	}
-	return [PlacedInfo infoWithObject:container block:^(id view) {
+	return [PlacedInfo.alloc initWithObject:container block:^(id view) {
 		for (NSButton *btn in ((NSView *)view).subviews)
 			if (btn.state == NSControlStateValueOn) return btn.title;
 		return @"???";
 	}];
 }
+static void set_sep(char *dst, const char *src) {
+	static const char escSeq[] = "a\ab\bf\fn\nr\rt\tv\v";
+	const char *sp = src;
+	memset(dst, 0, MAX_SEP_LEN + 1);
+	for (int i = 0; i < MAX_SEP_LEN && *sp != '\0'; i ++, sp ++) {
+		if (*sp == '\\' && *(++ sp) != '\0') {
+			for (const char *ep = escSeq; *ep != '\0'; ep += 2) {
+				if (*sp == *ep) { dst[i] = ep[1]; break; }
+			}
+			if (dst[i] == '\0') {
+				if (*sp >= '0' && *sp <= '7') {
+					dst[i] = *sp - '0';
+					for (int j = 0; j < 2 && sp[1] >= '0' && sp[1] <= '7'; j ++)
+						dst[i] = (dst[i] << 3) + *(++ sp) - '0';
+				} else dst[i] = *sp;
+		}} else dst[i] = *sp;
+}}
 int main(int argc, const char * argv[]) {
+	for (int i = 1; i < argc; i ++) {
+		if (strcmp(argv[i], "--version") == 0) {
+			printf("queryByGUI ver. 0.1, by T.Unemi, June 5, 2022.\n");
+			return 0;
+		} else if (strcmp(argv[i], "-F") == 0 && (++ i) < argc) {
+			long len = strlen(argv[i]);
+			if (len < MAX_SEP_LEN) set_sep(keyValueSep, argv[i]);
+		} else if (strcmp(argv[i], "-R") == 0 && (++ i) < argc) {
+			long len = strlen(argv[i]);
+			if (len < MAX_SEP_LEN) set_sep(recordSep, argv[i]);
+		}
+	}
+
 	FILE *input = stdin;
 #ifdef DEBUG
 	input = fopen("/Users/unemi/Program/Utility/queryByGUI/test.json", "r");
@@ -442,6 +486,15 @@ int main(int argc, const char * argv[]) {
 		bufPt += nChars;
 		totalBytes += nChars;
 	}
+
+	static struct TypeNames { NSString *typeName; PlacedInfo *(*proc)(NSDictionary *); }
+	typeNames[] = {
+		{ @"checkbox", mk_checkbox }, { @"label", mk_label }, { @"text", mk_text },
+		{ @"digits", mk_digits }, { @"date", mk_date }, { @"time", mk_time },
+		{ @"slider", mk_slider },
+		{ @"popup button", mk_popup_button }, { @"radio buttons", mk_radio_buttons },
+		{ nil }
+	};
 
 	@autoreleasepool {
 	NSData *data = [NSData dataWithBytesNoCopy:buf length:totalBytes freeWhenDone:YES];
@@ -460,26 +513,20 @@ int main(int argc, const char * argv[]) {
 		NSString *type = item[@"type"];
 		if (type == nil) continue;
 		PlacedInfo *info = nil;
-		if ([type isEqualToString:@"push button"])
-			info = mk_push_button(item, &buttonIncluded, &OKBtn);
-		else if ([type isEqualToString:@"checkbox"]) info = mk_checkbox(item);
-		else if ([type isEqualToString:@"label"]) info = mk_label(item);
-		else if ([type isEqualToString:@"text"]) info = mk_text(item);
-		else if ([type isEqualToString:@"digits"]) info = mk_digits(item);
-		else if ([type isEqualToString:@"date"]) info = mk_date(item);
-		else if ([type isEqualToString:@"time"]) info = mk_time(item);
-		else if ([type isEqualToString:@"slider"]) info = mk_slider(item);
-		else if ([type isEqualToString:@"popup button"]) info = mk_popup_button(item);
-		else if ([type isEqualToString:@"radio buttons"]) info = mk_radio_buttons(item);
-		else error_return([NSString stringWithFormat:@"Unknown element type: %@.", type]);
-		if (info == nil) continue;
+		for (struct TypeNames *tnp = typeNames; tnp->typeName != nil; tnp ++)
+			if ([type isEqualToString:tnp->typeName]) { info = tnp->proc(item); break; }
+		if (info == nil) {
+			if ([type isEqualToString:@"push button"])
+				info = mk_push_button(item, &buttonIncluded, &OKBtn);
+			else error_return([NSString stringWithFormat:@"Unknown element type: %@.", type]);
+		}
 		info.properties = item;
 		if (info.getValueBlock != nil) [delegate.controls addObject:info];
 		[elements addObject:(infoByName[[info setupName]] = info)];
 	}
 	if (!buttonIncluded) {
 		OKBtn = [NSButton buttonWithTitle:@"OK" target:delegate action:@selector(ok:)];
-		PlacedInfo *info = [PlacedInfo infoWithObject:OKBtn block:nil];
+		PlacedInfo *info = [PlacedInfo.alloc initWithObject:OKBtn block:nil];
 		info.properties = @{@"right":@"window", @"lower":@"window"};
 		[elements addObject:(infoByName[[info setupName]] = info)];
 	}
@@ -505,10 +552,12 @@ int main(int argc, const char * argv[]) {
 		if ((value = elmInfo[@"width"]) != nil) {
 			if ([value isKindOfClass:NSNumber.class])
 				{ frame.size.width = [value doubleValue]; anc.h |= FixedSize; }
+			else [dependency addObject:@{@"subject":info,@"target":value,@"attr":@"width"}];
 		}
 		if ((value = elmInfo[@"height"]) != nil) {
 			if ([value isKindOfClass:NSNumber.class])
 				{ frame.size.height = [value doubleValue]; anc.v |= FixedSize; }
+			else [dependency addObject:@{@"subject":info,@"target":value,@"attr":@"height"}];
 		}
 		if ((value = elmInfo[@"left"]) != nil) {
 			if ((plc = infoByName[value]) != nil && (plc.anc.h & AnchorMin)) {
@@ -517,7 +566,8 @@ int main(int argc, const char * argv[]) {
 			} else if (![value isEqualTo:@"window"]) {
 				[dependency addObject:@{@"subject":info,@"target":value,@"attr":@"left"}];
 			} else anc.h |= AnchorMin;
-		}
+		} else if ((value = elmInfo[@"align left"]) != nil)
+			[dependency addObject:@{@"subject":info,@"target":value,@"attr":@"align left"}];
 		if ((value = elmInfo[@"right"]) != nil && anc.h != (AnchorMin | FixedSize)) {
 			CGFloat maxX = -1e10;
 			if ([value isEqualTo:@"window"]) maxX = NSMaxX(window.contentView.frame) - PADDING;
@@ -529,7 +579,8 @@ int main(int argc, const char * argv[]) {
 				else frame.origin.x = maxX - frame.size.width;
 				anc.h |= AnchorMax;
 			}
-		}
+		} else if ((value = elmInfo[@"align right"]) != nil)
+			[dependency addObject:@{@"subject":info,@"target":value,@"attr":@"align right"}];
 		if ((value = elmInfo[@"lower"]) != nil) {
 			if ((plc = infoByName[value]) != nil && (plc.anc.v & AnchorMin)) {
 				frame.origin.y = NSMaxY(plc.frame) + SPACING;
@@ -558,23 +609,21 @@ int main(int argc, const char * argv[]) {
 				anc.v |= AnchorMin | AnchorMax;
 			} else [dependency addObject:@{@"subject":info,@"target":value,@"attr":@"baseline"}];
 		}
-		NSInteger ancInfo = 0;
-		if (elmInfo[@"left"] != nil) ancInfo |= 1;
-		if (elmInfo[@"right"] != nil) ancInfo |= 2;
-		if (ancInfo == 0) anc.h |= (AnchorMin | FixedSize);
+		AnchorType ancInfo = AnchorNone;
+		if (elmInfo[@"left"] != nil || elmInfo[@"align left"] != nil) ancInfo |= AnchorMin;
+		if (elmInfo[@"right"] != nil || elmInfo[@"align right"] != nil) ancInfo |= AnchorMax;
 		if (elmInfo[@"width"] == nil) {
-			if ((anc.h & (AnchorMin | AnchorMax)) != 0) anc.h |= (AnchorMin | AnchorMax);
-			if (ancInfo == 1 || ancInfo == 2) anc.h |= FixedSize;
+			if (ancInfo == AnchorNone) anc.h = AnchorAll;	// default
+			else if (ancInfo != AnchorMinMax) anc.h |= FixedSize;
 		}
 		if (anc.h == (AnchorMin | FixedSize)) anc.h |= AnchorMax;
 		else if (anc.h == (AnchorMax | FixedSize)) anc.h |= AnchorMin;
-		ancInfo = 0;
-		if (elmInfo[@"lower"] != nil) ancInfo |= 1;
-		if (elmInfo[@"upper"] != nil) ancInfo |= 2;
-		if (ancInfo == 0 && elmInfo[@"baseline"] == nil) anc.v |= (AnchorMin | FixedSize);
+		ancInfo = AnchorNone;
+		if (elmInfo[@"lower"] != nil || elmInfo[@"baseline"] != nil) ancInfo |= AnchorMin;
+		if (elmInfo[@"upper"] != nil) ancInfo |= AnchorMax;
 		if (elmInfo[@"height"] == nil) {
-			if ((anc.v & (AnchorMin | AnchorMax)) != 0) anc.v |= (AnchorMin | AnchorMax);
-			if (ancInfo == 1 || ancInfo == 2) anc.v |= FixedSize;
+			if (ancInfo == AnchorNone) anc.v = AnchorAll;	// default
+			else if (ancInfo != AnchorMinMax) anc.v |= FixedSize;
 		}
 		if (anc.v == (AnchorMin | FixedSize)) anc.v |= AnchorMax;
 		else if (anc.v == (AnchorMax | FixedSize)) anc.v |= AnchorMin;
@@ -591,39 +640,90 @@ int main(int argc, const char * argv[]) {
 		NSString *attr = item[@"attr"];
 		PlacedInfo *info = item[@"subject"], *target = infoByName[item[@"target"]];
 		if (target == nil) continue;
-		NSRect frame = info.frame, tgtFrm = target.frame;
+		NSRect frame = info.frame, tgtFrm = target.frame,
+			coreFrm = info.coreFrame, tgcrFrm = target.coreFrame;
 		AnchorsInfo anc = info.anc;
-		if ([attr isEqualToString:@"left"] && (target.anc.h & AnchorMax)) {
-			CGFloat newX = NSMaxX(tgtFrm) + SPACING;
-			if ((anc.h & (AnchorMax | FixedSize)) == AnchorMax)
-				frame.size.width += frame.origin.x - newX;
-			frame.origin.x = newX;
-			anc.h |= AnchorMin; if (anc.h & FixedSize) anc.h |= AnchorMax;
+		if ([attr isEqualToString:@"width"] && (target.anc.h & FixedSize)) {
+			if ((anc.h & FixedSize) == 0) {
+				CGFloat newW = tgcrFrm.size.width;
+				if ((anc.h & AnchorMinMax) == AnchorMax)
+					coreFrm.origin.x += coreFrm.size.width - newW;
+				coreFrm.size.width = newW;
+				info.coreFrame = coreFrm;
+				anc.h |= FixedSize; if (anc.h & AnchorMinMax) anc.h |= AnchorMinMax;
+			}
+		} else if ([attr isEqualToString:@"height"] && (target.anc.v & FixedSize)) {
+			if ((anc.v & FixedSize) == 0) {
+				CGFloat newH = tgcrFrm.size.height;
+				if ((anc.v & AnchorMinMax) == AnchorMax)
+					coreFrm.origin.y += coreFrm.size.height - newH;
+				coreFrm.size.height = newH;
+				info.coreFrame = coreFrm;
+				anc.v |= FixedSize; if (anc.v & AnchorMinMax) anc.v |= AnchorMinMax;
+			}
+		} else if ([attr isEqualToString:@"align left"] && (target.anc.h & AnchorMin)) {
+			if ((anc.h & AnchorMin) == 0) {
+				CGFloat newX = tgcrFrm.origin.x;
+				if ((anc.h & (AnchorMax | FixedSize)) == AnchorMax)
+					coreFrm.size.width += coreFrm.origin.x - newX;
+				coreFrm.origin.x = newX;
+				info.coreFrame = coreFrm;
+				anc.h |= AnchorMin; if (anc.h & FixedSize) anc.h |= AnchorMax;
+			}
+		} else if ([attr isEqualToString:@"align right"] && (target.anc.h & AnchorMin)) {
+			if ((anc.h & AnchorMin) == 0) {
+				CGFloat newX = tgcrFrm.origin.x;
+				if ((anc.h & (AnchorMax | FixedSize)) == AnchorMax)
+					coreFrm.size.width += coreFrm.origin.x - newX;
+				coreFrm.origin.x = newX;
+				info.coreFrame = coreFrm;
+				anc.h |= AnchorMin; if (anc.h & FixedSize) anc.h |= AnchorMax;
+			}
+		} else if ([attr isEqualToString:@"left"] && (target.anc.h & AnchorMax)) {
+			if ((anc.h & AnchorMin) == 0) {
+				CGFloat newX = NSMaxX(tgtFrm) + SPACING;
+				if ((anc.h & (AnchorMax | FixedSize)) == AnchorMax)
+					frame.size.width += frame.origin.x - newX;
+				frame.origin.x = newX;
+				info.frame = frame;
+				anc.h |= AnchorMin; if (anc.h & FixedSize) anc.h |= AnchorMax;
+			}
 		} else if ([attr isEqualToString:@"right"] && (target.anc.h & AnchorMin)) {
-			CGFloat newMaxX = tgtFrm.origin.x - SPACING;
-			if ((anc.h & (AnchorMin | FixedSize)) == AnchorMin)
-				frame.size.width = newMaxX - frame.origin.x;
-			else frame.origin.x = newMaxX - frame.size.width;
-			anc.h |= AnchorMax; if (anc.h & FixedSize) anc.h |= AnchorMin;
+			if ((anc.h & AnchorMax) == 0) {
+				CGFloat newMaxX = tgtFrm.origin.x - SPACING;
+				if ((anc.h & (AnchorMin | FixedSize)) == AnchorMin)
+					frame.size.width = newMaxX - frame.origin.x;
+				else frame.origin.x = newMaxX - frame.size.width;
+				info.frame = frame;
+				anc.h |= AnchorMax; if (anc.h & FixedSize) anc.h |= AnchorMin;
+			}
 		} else if ([attr isEqualToString:@"lower"] && (target.anc.v & AnchorMax)) {
-			CGFloat newY = NSMaxY(tgtFrm) + SPACING;
-			if ((anc.v & (AnchorMax | FixedSize)) == AnchorMax)
-				frame.size.height += frame.origin.y - newY;
-			frame.origin.y = newY;
-			anc.v |= AnchorMin; if (anc.v & FixedSize) anc.v |= AnchorMax;
+			if ((anc.v & AnchorMin) == 0) {
+				CGFloat newY = NSMaxY(tgtFrm) + SPACING;
+				if ((anc.v & (AnchorMax | FixedSize)) == AnchorMax)
+					frame.size.height += frame.origin.y - newY;
+				frame.origin.y = newY;
+				info.frame = frame;
+				anc.v |= AnchorMin; if (anc.v & FixedSize) anc.v |= AnchorMax;
+			}
 		} else if ([attr isEqualToString:@"upper"] && (target.anc.v & AnchorMin)) {
-			CGFloat newMaxY = tgtFrm.origin.y - SPACING;
-			if ((anc.v & (AnchorMin | FixedSize)) == AnchorMin)
-				frame.size.height = newMaxY - frame.origin.y;
-			else frame.origin.y = newMaxY - frame.size.height;
-			anc.v |= AnchorMax; if (anc.v & FixedSize) anc.v |= AnchorMin;
+			if ((anc.v & AnchorMax) == 0) {
+				CGFloat newMaxY = tgtFrm.origin.y - SPACING;
+				if ((anc.v & (AnchorMin | FixedSize)) == AnchorMin)
+					frame.size.height = newMaxY - frame.origin.y;
+				else frame.origin.y = newMaxY - frame.size.height;
+				info.frame = frame;
+				anc.v |= AnchorMax; if (anc.v & FixedSize) anc.v |= AnchorMin;
+			}
 		} else if ([attr isEqualToString:@"baseline"] &&
 			(target.anc.v & (AnchorMin | AnchorMax)) == (AnchorMin | AnchorMax)) {
-			frame.origin.y = tgtFrm.origin.y +
-				target.baselineOffsetFromBottom - info.baselineOffsetFromBottom;
-			anc.v |= AnchorMin | AnchorMax;
+			if ((anc.v & AnchorMin) == 0) {
+				frame.origin.y = tgtFrm.origin.y +
+					target.baselineOffsetFromBottom - info.baselineOffsetFromBottom;
+				info.frame = frame;
+				anc.v |= AnchorMin; if (anc.v & FixedSize) anc.v |= AnchorMax;
+			}
 		} else continue;
-		info.frame = frame;
 		info.anc = anc;
 		[dependency removeObjectAtIndex:i];
 		reduced = YES;

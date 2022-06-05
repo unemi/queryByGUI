@@ -343,10 +343,10 @@ for shell scripting, typically working with ShortCut utility.</p>
 by feeding a text in JSON format from the standard input.</p>
 
 <p>When the user click one of the <a href="#pushButton">push buttons</a> in the window,
-the process of quiryByGUI stops after it outputs a text to the standard output that
+the process of queryByGUI stops after it outputs a text to the standard output that
 expresses a list of name-value pairs.</p>
 
-<div style="text-align:right">June 4, 2022.</div>
+<div style="text-align:right">Created in June 4, 2022. Modified in June 5, 2022.</div>
 
 <p>By <a href="http://www.intlab.soka.ac.jp/%7Eunemi/">Tatsuo Unemi</a>,
 Department of Information Systems Science,
@@ -362,65 +362,116 @@ Department of Information Systems Science,
 <a href="#toc_1">Table of Contents</a>
 </li>
 <li>
-<a href="#toc_2">Specification of GUI arrangement</a>
+<a href="#toc_2">How to install</a>
+</li>
+<li>
+<a href="#toc_3">Command options</a>
+</li>
+<li>
+<a href="#toc_4">Specification of GUI arrangement</a>
 <ul>
 <li>
-<a href="#toc_3">Top level object</a>
+<a href="#toc_5">Top level object</a>
 </li>
 <li>
-<a href="#toc_4">GUI elements</a>
+<a href="#toc_6">GUI elements</a>
 <ul>
 <li>
-<a href="#toc_5">label</a>
+<a href="#toc_7">label</a>
 </li>
 <li>
-<a href="#toc_6">text</a>
+<a href="#toc_8">text</a>
 </li>
 <li>
-<a href="#toc_7">digits</a>
+<a href="#toc_9">digits</a>
 </li>
 <li>
-<a href="#toc_8">date</a>
+<a href="#toc_10">date</a>
 </li>
 <li>
-<a href="#toc_9">time</a>
+<a href="#toc_11">time</a>
 </li>
 <li>
-<a href="#toc_10">checkbox</a>
+<a href="#toc_12">checkbox</a>
 </li>
 <li>
-<a href="#toc_11">popup button</a>
+<a href="#toc_13">popup button</a>
 </li>
 <li>
-<a href="#toc_12">radio buttons</a>
+<a href="#toc_14">radio buttons</a>
 </li>
 <li>
-<a href="#toc_13">slider</a>
+<a href="#toc_15">slider</a>
 </li>
 <li>
-<a href="#toc_14">push button</a>
+<a href="#toc_16">push button</a>
 </li>
 </ul>
 </li>
 <li>
-<a href="#toc_15">Attributes for arrangement</a>
+<a href="#toc_17">Attributes for arrangement</a>
 </li>
 </ul>
 </li>
 <li>
-<a href="#toc_16">Output text</a>
+<a href="#toc_18">Output text</a>
 </li>
 <li>
-<a href="#toc_17">Examples</a>
+<a href="#toc_19">Example</a>
 </li>
 </ul>
 </li>
 </ul>
 
 
-<h2 id="toc_2">Specification of GUI arrangement</h2>
+<h2 id="toc_2">How to install</h2>
 
-<h3 id="toc_3">Top level object</h3>
+<p><code>queryByGUI</code> is an executable file in the form of universal binary for both
+Intel x86_64 and Apple arm64 architectures to be launched from shell command line.
+You can find the file under <code>bin</code> directory of this repository.
+Copy or move the file into an appropriate directory in the local storage
+of your machine, such as <code>/usr/local/bin</code>, if you want to make it
+easier to invoke it just by typing-in <code>queryByGUI</code> in your <code>Terminal</code>.</p>
+
+<p>If you want to modify the source code for your own usage,
+make a clone of this repository into a local directory of your computer,
+and then open the project package <code>queryByGUI.xcodeproj</code> using <code>Xcode</code>.
+After your edit and test, the following command is effective
+to install the executable file into <code>/usr/local/bin</code> directory.
+Note that <em>Xcode command line tools</em> must be installed in your computer
+before issuing <code>xcodebuild</code> command.</p>
+
+<div><pre><code class="language-none">cd .../queryByGUI   # go to the top directory of the copy of this repository.
+xcodebuild -target queryByGUI archive
+mv -f /tmp/queryByGUI.dst/usr/local/bin/queryByGUI /usr/local/bin/
+rm -rf /tmp/queryByGUI.dst build    # if you want to clean up the working files.</code></pre></div>
+
+<p><a name=commandOptions></a></p>
+
+<h2 id="toc_3">Command options</h2>
+
+<p><code>queryByGUI</code> command can be followed by optional arguments separated by white spaces.
+The possible options are as follows.</p>
+
+<ul>
+<li><code>--version</code> shows a text string of version information, then quits immediately.</li>
+<li><code>-F &lt;sep&gt;</code> makes <code>&lt;sep&gt;</code> as the separator between name and value for the result
+<a href="#output">output</a>.</li>
+<li><code>-R &lt;sep&gt;</code> makes <code>&lt;sep&gt;</code> as the separator between pairs for the result
+<a href="#output">output</a>.</li>
+</ul>
+
+<p>The separator must be a string shorter than eight ASCII characters.
+You can include control characters by escape sequence with backslash character (<code>\</code>),
+such as <code>\a</code>, <code>\b</code>, <code>\f</code>, <code>\n</code>, <code>\r</code>, and <code>\t</code> for bell, backspace, form feed, new line,
+and carriage return respectively. An arbitrary seven bits code is allowed by an octal
+representation of three digits after a backslash, for example, <code>\033</code> is the escape code.
+Note that backslash character must be escaped in shell script using double backslash
+or single quotation marks.</p>
+
+<h2 id="toc_4">Specification of GUI arrangement</h2>
+
+<h3 id="toc_5">Top level object</h3>
 
 <p>The top level data of JSON form is an <em>object</em> where the possible string-value pairs are:</p>
 
@@ -470,7 +521,7 @@ queryByGUI shows an error message and quit immediately with an error code.</p>
 <div><pre><code class="language-none">{&quot;title&quot;:&quot;Please input your choice&quot;,&quot;width&quot;:200,&quot;height&quot;:120,
  &quot;elements&quot;:[ ... ]}</code></pre></div>
 
-<h3 id="toc_4">GUI elements</h3>
+<h3 id="toc_6">GUI elements</h3>
 
 <p>Each GUI element is represented in a form of <em>object</em> including a number of
 attributes depending on the type of element.
@@ -485,7 +536,7 @@ text element, is used. </p>
 <p>The possible types are: label, text, digits, date, time,
 checkbox, popup button, radio buttons, slider, and push button so far.</p>
 
-<h4 id="toc_5">label</h4>
+<h4 id="toc_7">label</h4>
 
 <table>
 <thead>
@@ -514,7 +565,7 @@ checkbox, popup button, radio buttons, slider, and push button so far.</p>
 
 <p>ex. <code>{&quot;type&quot;:&quot;label&quot;,&quot;text&quot;:&quot;Specify the name of fruit.&quot;}</code></p>
 
-<h4 id="toc_6">text</h4>
+<h4 id="toc_8">text</h4>
 
 <table>
 <thead>
@@ -546,6 +597,12 @@ checkbox, popup button, radio buttons, slider, and push button so far.</p>
 <td>null string</td>
 </tr>
 <tr>
+<td><code>&quot;mandatory&quot;</code></td>
+<td>boolean</td>
+<td>indicates mandatory<a href="#mandarotyText">*1</a></td>
+<td>false</td>
+</tr>
+<tr>
 <td><code>&quot;title&quot;</code></td>
 <td>string</td>
 <td>the title string shown at the left-side</td>
@@ -554,9 +611,12 @@ checkbox, popup button, radio buttons, slider, and push button so far.</p>
 </tbody>
 </table>
 
+<p><a name=mandarotyText></a>*1. <code>OK</code> button becomes enabled only when
+all of the mandatory <strong>text</strong>s have text value.</p>
+
 <p><a name=digits></a></p>
 
-<h4 id="toc_7">digits</h4>
+<h4 id="toc_9">digits</h4>
 
 <table>
 <thead>
@@ -617,10 +677,16 @@ checkbox, popup button, radio buttons, slider, and push button so far.</p>
 <td>indicates if a stepper follows it</td>
 <td>false</td>
 </tr>
+<tr>
+<td><code>&quot;increment&quot;</code></td>
+<td>number</td>
+<td>increment/decrement value of stepper</td>
+<td>1</td>
+</tr>
 </tbody>
 </table>
 
-<h4 id="toc_8">date</h4>
+<h4 id="toc_10">date</h4>
 
 <table>
 <thead>
@@ -642,19 +708,19 @@ checkbox, popup button, radio buttons, slider, and push button so far.</p>
 <tr>
 <td><code>&quot;value&quot;</code></td>
 <td>string</td>
-<td>the initial value<a href="#dateForm">*1</a></td>
+<td>the initial value<a href="#dateForm">*2</a></td>
 <td><code>&quot;today&quot;</code></td>
 </tr>
 <tr>
 <td><code>&quot;min&quot;</code></td>
 <td>string</td>
-<td>the earliest date allowed<a href="#dateForm">*1</a></td>
+<td>the earliest date allowed<a href="#dateForm">*2</a></td>
 <td>no limit</td>
 </tr>
 <tr>
 <td><code>&quot;max&quot;</code></td>
 <td>string</td>
-<td>the latest date allowed<a href="#dateForm">*1</a></td>
+<td>the latest date allowed<a href="#dateForm">*2</a></td>
 <td>no limit</td>
 </tr>
 <tr>
@@ -666,12 +732,12 @@ checkbox, popup button, radio buttons, slider, and push button so far.</p>
 </tbody>
 </table>
 
-<p><a name=dateForm></a>*1. <code>&quot;today&quot;</code> or a string representing a date,
+<p><a name=dateForm></a>*2. <code>&quot;today&quot;</code> or a string representing a date,
 a sequence of four digits of year, two digits of month, and two digits of day,
 separated by <code>-</code>. 
 For example, <code>&quot;2022-06-04&quot;</code> means June 4th in the year 2022.</p>
 
-<h4 id="toc_9">time</h4>
+<h4 id="toc_11">time</h4>
 
 <table>
 <thead>
@@ -693,19 +759,19 @@ For example, <code>&quot;2022-06-04&quot;</code> means June 4th in the year 2022
 <tr>
 <td><code>&quot;value&quot;</code></td>
 <td>string</td>
-<td>the initial value<a href="#timeForm">*2</a></td>
+<td>the initial value<a href="#timeForm">*3</a></td>
 <td><code>&quot;now&quot;</code></td>
 </tr>
 <tr>
 <td><code>&quot;min&quot;</code></td>
 <td>string</td>
-<td>the earliest time allowed<a href="#timeForm">*2</a></td>
+<td>the earliest time allowed<a href="#timeForm">*3</a></td>
 <td><code>&quot;00:00:00&quot;</code></td>
 </tr>
 <tr>
 <td><code>&quot;max&quot;</code></td>
 <td>string</td>
-<td>the latest time allowed<a href="#timeForm">*2</a></td>
+<td>the latest time allowed<a href="#timeForm">*3</a></td>
 <td><code>&quot;23:59:59&quot;</code></td>
 </tr>
 <tr>
@@ -717,13 +783,13 @@ For example, <code>&quot;2022-06-04&quot;</code> means June 4th in the year 2022
 </tbody>
 </table>
 
-<p><a name=timeForm></a>*2. <code>&quot;now&quot;</code> or a string representing a time,
+<p><a name=timeForm></a>*3. <code>&quot;now&quot;</code> or a string representing a time,
 a sequence of two digits of hour from 00 to 23,
 two digits of minute from 00 to 59, and two digits of second from 00 to 59,
 separated by <code>:</code>. 
 For example, <code>&quot;18:23:03&quot;</code> means 6:23:3 PM.</p>
 
-<h4 id="toc_10">checkbox</h4>
+<h4 id="toc_12">checkbox</h4>
 
 <table>
 <thead>
@@ -757,7 +823,7 @@ For example, <code>&quot;18:23:03&quot;</code> means 6:23:3 PM.</p>
 </tbody>
 </table>
 
-<h4 id="toc_11">popup button</h4>
+<h4 id="toc_13">popup button</h4>
 
 <table>
 <thead>
@@ -779,7 +845,7 @@ For example, <code>&quot;18:23:03&quot;</code> means 6:23:3 PM.</p>
 <tr>
 <td><code>&quot;choice&quot;</code></td>
 <td>array of strings</td>
-<td>names of choice<a href="#choice">*3</a></td>
+<td>names of choice<a href="#choice">*4</a></td>
 <td>N/A</td>
 </tr>
 <tr>
@@ -791,11 +857,11 @@ For example, <code>&quot;18:23:03&quot;</code> means 6:23:3 PM.</p>
 </tbody>
 </table>
 
-<p><a name=choice></a>*3. Names shown as alternatives.
+<p><a name=choice></a>*4. Names shown as alternatives.
 A name start with <code>&quot;*&quot;</code> becomes the default choice.
 If no name has <code>&quot;*&quot;</code>, the first element in the name list becomes the default.</p>
 
-<h4 id="toc_12">radio buttons</h4>
+<h4 id="toc_14">radio buttons</h4>
 
 <table>
 <thead>
@@ -817,7 +883,7 @@ If no name has <code>&quot;*&quot;</code>, the first element in the name list be
 <tr>
 <td><code>&quot;choice&quot;</code></td>
 <td>array of strings</td>
-<td>names of choice<a href="#choice">*3</a></td>
+<td>names of choice<a href="#choice">*4</a></td>
 <td>N/A</td>
 </tr>
 <tr>
@@ -829,7 +895,7 @@ If no name has <code>&quot;*&quot;</code>, the first element in the name list be
 </tbody>
 </table>
 
-<h4 id="toc_13">slider</h4>
+<h4 id="toc_15">slider</h4>
 
 <table>
 <thead>
@@ -901,7 +967,7 @@ If no name has <code>&quot;*&quot;</code>, the first element in the name list be
 
 <p><a name=pushButton></a></p>
 
-<h4 id="toc_14">push button</h4>
+<h4 id="toc_16">push button</h4>
 
 <table>
 <thead>
@@ -923,7 +989,7 @@ If no name has <code>&quot;*&quot;</code>, the first element in the name list be
 <tr>
 <td><code>&quot;title&quot;</code></td>
 <td>string</td>
-<td>the title string<a href="#buttonTitle">*4</a></td>
+<td>the title string<a href="#buttonTitle">*5</a></td>
 <td>null string</td>
 </tr>
 </tbody>
@@ -933,11 +999,11 @@ If no name has <code>&quot;*&quot;</code>, the first element in the name list be
 one <code>&quot;OK&quot;</code> button is automatically created and placed at the bottom right corner
 in the window.</p>
 
-<p><a name=buttonTitle></a>*4. If the title is <code>&quot;Cancel&quot;</code>,
+<p><a name=buttonTitle></a>*5. If the title is <code>&quot;Cancel&quot;</code>,
 short cut key is set to Escape code.
 If the title is <code>&quot;OK&quot;</code>, short cut key is set to Newline code.</p>
 
-<h3 id="toc_15">Attributes for arrangement</h3>
+<h3 id="toc_17">Attributes for arrangement</h3>
 
 <p>The default position and size of each element are (20,20)
 and a natural size depending on the type and the content.
@@ -959,39 +1025,39 @@ is neighboring with in both vertical and horizontal dimensions. </p>
 <tbody>
 <tr>
 <td><code>&quot;width&quot;</code></td>
-<td>number</td>
-<td>element width</td>
+<td>number/string</td>
+<td>absolute width or another element&#39;s name</td>
 <td>natural size</td>
 </tr>
 <tr>
 <td><code>&quot;height&quot;</code></td>
-<td>number</td>
-<td>element height</td>
+<td>number/string</td>
+<td>absolute height or another element&#39;s name</td>
 <td>natural size</td>
 </tr>
 <tr>
 <td><code>&quot;left&quot;</code></td>
 <td>string</td>
-<td><code>&quot;window&quot;</code> or a name of another element</td>
+<td><code>&quot;window&quot;</code> or another element&#39;s name</td>
 <td><code>window</code></td>
 </tr>
 <tr>
 <td><code>&quot;right&quot;</code></td>
 <td>string</td>
-<td><code>&quot;window&quot;</code> or a name of another element</td>
-<td>none</td>
-</tr>
-<tr>
-<td><code>&quot;upper&quot;</code></td>
-<td>string</td>
-<td><code>&quot;window&quot;</code> or a name of another element</td>
+<td><code>&quot;window&quot;</code> or another element&#39;s name</td>
 <td>none</td>
 </tr>
 <tr>
 <td><code>&quot;lower&quot;</code></td>
 <td>string</td>
-<td><code>&quot;window&quot;</code> or a name of another element</td>
+<td><code>&quot;window&quot;</code> or another element&#39;s name</td>
 <td><code>window</code></td>
+</tr>
+<tr>
+<td><code>&quot;upper&quot;</code></td>
+<td>string</td>
+<td><code>&quot;window&quot;</code> or another element&#39;s name</td>
+<td>none</td>
 </tr>
 <tr>
 <td><code>&quot;baseline&quot;</code></td>
@@ -999,34 +1065,65 @@ is neighboring with in both vertical and horizontal dimensions. </p>
 <td>a name of another element</td>
 <td>none</td>
 </tr>
+<tr>
+<td><code>&quot;align left&quot;</code></td>
+<td>string</td>
+<td>another element&#39;s name</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>&quot;align right&quot;</code></td>
+<td>string</td>
+<td>another element&#39;s name</td>
+<td>none</td>
+</tr>
 </tbody>
 </table>
 
 <p>If you specify both <code>left</code> and <code>right</code> but not <code>width</code>,
-quiryByGUI assumes the width is flexible to set the positions of
+queryByGUI assumes the width is flexible to set the positions of
 left and right edges of the element as specified.
 The case of <code>upper</code>, <code>lower</code>, and <code>height</code> is the same.
 <code>&quot;baseline&quot;</code> is useful to align two elements
 as the vertical position of text baselines of them are same.</p>
 
-<h2 id="toc_16">Output text</h2>
+<p>When there is no element of specified name, queryByGUI outputs
+an error message and quits immediately.
+When the specification is redundant, queryByGUI uses items
+in unknown order, then some items are ignored.</p>
 
-<p>The output text from queryByGUI is a sequence of lines,
-in which each line is colon-separated name-value pair.
-The last line indicates which push button was clicked,
-for example, <code>Clicked:OK</code> when <code>OK</code> button was clicked.</p>
+<p>When the value for <code>width</code> is a name of another element,
+the width of <em>core object</em> in the element is adjusted to the same
+dimension with the core object of the referred element.
+<code>height</code>, <code>align left</code>, and <code>align right</code> also work in the same ways. 
+Core object is the main part of element, for example,
+the title is ignored in the cases of
+text, digits, date, time, popup button, and slider.
+Stepper for digits and digits for slider are also ignored.</p>
 
-<h2 id="toc_17">Examples</h2>
+<p><a name=output></a></p>
+
+<h2 id="toc_18">Output text</h2>
+
+<p>The output text from queryByGUI is a sequence of name-value pairs.
+The last pair in the sequence indicates which push button was clicked,
+for example, <code>Clicked:OK</code> when <code>OK</code> button was clicked.
+In default, the separator between name and value is colon (<code>:</code>),
+and the separator between pairs is newline (<code>\n</code>).
+You can change these separators by <a href="#commandOptions">command options</a>.</p>
+
+<h2 id="toc_19">Example</h2>
 
 <p>When you run a shell script</p>
 
 <div><pre><code class="language-none">#! /bin/bash
 # queryByGUI sample code
 #
-queryByGUI &lt;&lt; EOF
+queryByGUI &lt;&lt; EOF &gt; /tmp/qBG_$$
 {&quot;title&quot;:&quot;Make a movie file of 720p&quot;,&quot;height&quot;:156,
 &quot;elements&quot;:[
-  {&quot;type&quot;:&quot;text&quot;,&quot;placeholder&quot;:&quot;/Users/***/Movies/***.mov&quot;,&quot;title&quot;:&quot;Source path:&quot;,
+  {&quot;type&quot;:&quot;text&quot;,&quot;placeholder&quot;:&quot;/Users/***/Movies/***.mov&quot;,
+    &quot;title&quot;:&quot;Source path:&quot;,&quot;mandatory&quot;:true,
     &quot;upper&quot;:&quot;window&quot;,&quot;left&quot;:&quot;window&quot;,&quot;right&quot;:&quot;window&quot;,&quot;name&quot;:&quot;Path&quot;},
   {&quot;type&quot;:&quot;time&quot;,&quot;title&quot;:&quot;Start skip:&quot;,&quot;value&quot;:&quot;00:00:00&quot;,
     &quot;upper&quot;:&quot;Path&quot;,&quot;name&quot;:&quot;SS&quot;},
@@ -1043,7 +1140,9 @@ EOF</code></pre></div>
 
 <p>a window shown in Figure 1 is displayed.
 When you click the OK button after you operate GUI elements
-as shown in Figure 2, you will get the output text</p>
+as shown in Figure 2, you will get a file at <code>/tmp/qBG_$$</code>
+containing the output text as follows, where
+<code>$$</code> is replaced with the process ID by bash.</p>
 
 <div><pre><code class="language-none">Path:~/Movies/myAmazingMovie.mov 
 SS:00:13:04
@@ -1052,12 +1151,41 @@ Number:-41.74
 NSSlider:7.580569083230538
 Clicked:OK</code></pre></div>
 
-<table width=100% border=0>
+<table>
+<thead>
 <tr>
-<td><img align=center src="Images/qBG1.jpg"/>
-<td><img align=center src="Images/qBG2.jpg"/></tr>
-<tr><td align=center>Figure 1.<td align=center>Figure 2.</tr>
+<th style="text-align: center"><img src="Images/qBG1.jpg" alt="qBG1"></th>
+<th style="text-align: center"><img src="Images/qBG2.jpg" alt="qBG2"></th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td style="text-align: center">Figure 1.</td>
+<td style="text-align: center">Figure 2.</td>
+</tr>
+</tbody>
 </table>
+
+<p>You may continue the shell script code as follows, for example.</p>
+
+<div><pre><code class="language-none"># When Cancel button was clicked, remove output file and quit.
+if [ `fgrep -q Clicked:Cancel /tmp/qBG_$$; echo $?` -eq 0 ]
+then rm /tmp/qBG_$$; exit; fi
+srcPath=`awk -F: &#39;/^Path:/{print $2}&#39; /tmp/qBG_$$`
+ffmpeg -i $srcPath -s 1280x720\
+ -ss `awk -F: &#39;/^SS:/{printf &quot;%s:%s:%s&quot;,$2,$3,$4}&#39; /tmp/qBG_$$`\
+ -to `awk -F: &#39;/^ET:/{printf &quot;%s:%s:%s&quot;,$2,$3,$4}&#39; /tmp/qBG_$$`\
+ -y `echo $srcPath | awk -F/ &#39;{OSF=&quot;/&quot;;$NF=&quot;new.mp4&quot;;print}&#39;`
+rm /tmp/qBG_$$</code></pre></div>
+
+<p>This script is converting a movie file into 1280x720 mpeg4 format
+named <code>new.mp4</code> under the same folder with the source movie file
+using <code>ffmpeg</code> command.</p>
+
+<p>Instead of typing in the full path by yourself,
+you can drag the <code>Finder</code>&#39;s file icon and
+drop it into the text field in order to fill the field with the full path text. </p>
 
 <hr>
 
