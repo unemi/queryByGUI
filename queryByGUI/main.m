@@ -11,9 +11,6 @@
 #define SPACING 8
 #define EXSPACE 2.5
 
-NSString *objectID(NSObject *obj) {
-	return [NSString stringWithFormat:@"%08lX", (NSUInteger)obj];
-}
 void error_return(NSString *msg) {
 	fprintf(stderr, "%s\n", msg.UTF8String);
 	exit(1);
@@ -190,12 +187,16 @@ static void shift_view(NSView *view, NSSize shift) {
 }
 @end
 
-@interface Delegate : NSObject
+@interface Delegate : NSObject <NSTextFieldDelegate> {
+	NSMutableArray<NSTextField *> *mandatoryTexts;
+}
 @property (readonly) NSMutableArray<PlacedInfo *> *controls;
+@property NSButton *OKButton;
 @end
 @implementation Delegate
 - (instancetype)init {
 	if ((self = [super init]) == nil) return nil;
+	mandatoryTexts = NSMutableArray.new;
 	_controls = NSMutableArray.new;
 	return self;
 }
@@ -208,6 +209,20 @@ static void shift_view(NSView *view, NSSize shift) {
 	[NSApp terminate:nil];
 }
 - (void)dummyAction:(id)sender {}
+- (void)addMandatoryText:(NSTextField *)txt {
+	[mandatoryTexts addObject:txt];
+	txt.delegate = self;
+}
+- (void)checkMandatoryTexts {
+	if (_OKButton == nil) return;
+	BOOL ready = YES;
+	for (NSTextField *txt in mandatoryTexts)
+		if (txt.stringValue.length == 0) { ready = NO; break; }
+	_OKButton.enabled = ready;
+}
+- (void)controlTextDidEndEditing:(NSNotification *)notification {
+	[self checkMandatoryTexts];
+}
 @end
 
 @interface RadioButtons : NSView
@@ -272,6 +287,9 @@ PlacedInfo *mk_text(NSDictionary *item) {
 	NSTextField *txt = [NSTextField textFieldWithString:text];
 	if ((text = item[@"placeholder"]) != nil && [text isKindOfClass:NSString.class])
 		txt.placeholderString = text;
+	NSNumber *num;
+	if ((num = item[@"mandatory"]) != nil && num.boolValue)
+		[delegate addMandatoryText:txt];
 	[txt sizeToFit];
 	return mk_placed_info(item, txt, @[@"title"],
 		^(id txt) { return ((NSTextField *)txt).stringValue; });
@@ -465,8 +483,11 @@ int main(int argc, const char * argv[]) {
 		info.properties = @{@"right":@"window", @"lower":@"window"};
 		[elements addObject:(infoByName[[info setupName]] = info)];
 	}
-	if (OKBtn != nil) OKBtn.keyEquivalent = @"\r";
-
+	if (OKBtn != nil) {
+		OKBtn.keyEquivalent = @"\r";
+		delegate.OKButton = OKBtn;
+		[delegate checkMandatoryTexts];
+	}
 	NSRect rect = {0,0,400,200};
 	id value;
 	if ((value = info[@"width"]) != nil) rect.size.width = [value doubleValue];

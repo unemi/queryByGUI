@@ -1,6 +1,6 @@
 {"title":"Make a movie file of 720p","height":156,
 "elements":[
-  {"type":"text","placeholder":"/Users/***/Movies/***.mov","title":"Source path:",
+  {"type":"text","placeholder":"/Users/***/Movies/***.mov","title":"Source path:","mandatory":true,
     "upper":"window","left":"window","right":"window","name":"Path"},
   {"type":"time","title":"Start skip:","value":"00:00:00","upper":"Path","name":"SS"},
   {"type":"time","title":"End time:","value":"00:00:00","baseline":"SS","right":"window","name":"ET"},

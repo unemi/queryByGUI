@@ -10,7 +10,7 @@ You can specify the GUI elements and the arrangement in the window
 by feeding a text in JSON format from the standard input.
 
 When the user click one of the [push buttons](#pushButton) in the window,
-the process of quiryByGUI stops after it outputs a text to the standard output that
+the process of queryByGUI stops after it outputs a text to the standard output that
 expresses a list of name-value pairs.
 
 <div style="text-align:right">June 4, 2022.</div>
@@ -74,7 +74,11 @@ ex. `{"type":"label","text":"Specify the name of fruit."}`
 |`"type"`|string|`"text"`|N/A|
 |`"text"`|string|the initial value|null string|
 |`"placeholder"`|string|shown as a template|null string|
+|`"mandatory"`|boolean|indicates mandatory[*1](#mandarotyText)|false|
 |`"title"`|string|the title string shown at the left-side|null string|
+
+<a name=mandarotyText></a>*1. `OK` button becomes enabled only when
+all of the mandatory **text**s have text value.
 
 <a name=digits></a>
 #### digits
@@ -88,17 +92,18 @@ ex. `{"type":"label","text":"Specify the name of fruit."}`
 |`"fraction"`|number|the number of columns in the fraction part|2|
 |`"title"`|string|the title string shown at the left-side|null string|
 |`"stepper"`|boolean|indicates if a stepper follows it|false|
+|`"increment"`|number|increment/decrement value of stepper|1|
 
 #### date
 |string|value type|value|default value|
 |-----|-----|-----|-----|
 |`"type"`|string|`"date"`|N/A|
-|`"value"`|string|the initial value[*1](#dateForm)|`"today"`|
-|`"min"`|string|the earliest date allowed[*1](#dateForm)|no limit|
-|`"max"`|string|the latest date allowed[*1](#dateForm)|no limit|
+|`"value"`|string|the initial value[*2](#dateForm)|`"today"`|
+|`"min"`|string|the earliest date allowed[*2](#dateForm)|no limit|
+|`"max"`|string|the latest date allowed[*2](#dateForm)|no limit|
 |`"title"`|string|the title string shown at the left-side|null string|
 
-<a name=dateForm></a>*1. `"today"` or a string representing a date,
+<a name=dateForm></a>*2. `"today"` or a string representing a date,
 a sequence of four digits of year, two digits of month, and two digits of day,
 separated by `-`. 
 For example, `"2022-06-04"` means June 4th in the year 2022.
@@ -107,12 +112,12 @@ For example, `"2022-06-04"` means June 4th in the year 2022.
 |string|value type|value|default value|
 |-----|-----|-----|-----|
 |`"type"`|string|`"time"`|N/A|
-|`"value"`|string|the initial value[*2](#timeForm)|`"now"`|
-|`"min"`|string|the earliest time allowed[*2](#timeForm)|`"00:00:00"`|
-|`"max"`|string|the latest time allowed[*2](#timeForm)|`"23:59:59"`|
+|`"value"`|string|the initial value[*3](#timeForm)|`"now"`|
+|`"min"`|string|the earliest time allowed[*3](#timeForm)|`"00:00:00"`|
+|`"max"`|string|the latest time allowed[*3](#timeForm)|`"23:59:59"`|
 |`"title"`|string|the title string shown at the left-side|null string|
 
-<a name=timeForm></a>*2. `"now"` or a string representing a time,
+<a name=timeForm></a>*3. `"now"` or a string representing a time,
 a sequence of two digits of hour from 00 to 23,
 two digits of minute from 00 to 59, and two digits of second from 00 to 59,
 separated by `:`. 
@@ -129,10 +134,10 @@ For example, `"18:23:03"` means 6:23:3 PM.
 |string|value type|value|default value|
 |-----|-----|-----|-----|
 |`"type"`|string|`"popup button"`|N/A|
-|`"choice"`|array of strings|names of choice[*3](#choice)|N/A|
+|`"choice"`|array of strings|names of choice[*4](#choice)|N/A|
 |`"title"`|string|the title string shown at the left-side|null string|
 
-<a name=choice></a>*3. Names shown as alternatives.
+<a name=choice></a>*4. Names shown as alternatives.
 A name start with `"*"` becomes the default choice.
 If no name has `"*"`, the first element in the name list becomes the default.
 
@@ -140,7 +145,7 @@ If no name has `"*"`, the first element in the name list becomes the default.
 |string|value type|value|default value|
 |-----|-----|-----|-----|
 |`"type"`|string|`"radio buttons"`|N/A|
-|`"choice"`|array of strings|names of choice[*3](#choice)|N/A|
+|`"choice"`|array of strings|names of choice[*4](#choice)|N/A|
 |`"columns"`|number|the number of columns|1|
 
 #### slider
@@ -161,13 +166,13 @@ If no name has `"*"`, the first element in the name list becomes the default.
 |string|value type|value|default value|
 |-----|-----|-----|-----|
 |`"type"`|string|`"push button"`|N/A|
-|`"title"`|string|the title string[*4](#buttonTitle)|null string|
+|`"title"`|string|the title string[*5](#buttonTitle)|null string|
 
 If no push button is included in the list of GUI elements,
 one `"OK"` button is automatically created and placed at the bottom right corner
 in the window.
 
-<a name=buttonTitle></a>*4. If the title is `"Cancel"`,
+<a name=buttonTitle></a>*5. If the title is `"Cancel"`,
 short cut key is set to Escape code.
 If the title is `"OK"`, short cut key is set to Newline code.
 
@@ -185,16 +190,22 @@ is neighboring with in both vertical and horizontal dimensions.
 |`"height"`|number|element height|natural size|
 |`"left"`|string|`"window"` or a name of another element|`window`|
 |`"right"`|string|`"window"` or a name of another element|none|
-|`"upper"`|string|`"window"` or a name of another element|none|
 |`"lower"`|string|`"window"` or a name of another element|`window`|
+|`"upper"`|string|`"window"` or a name of another element|none|
 |`"baseline"`|string|a name of another element|none|
 
 If you specify both `left` and `right` but not `width`,
-quiryByGUI assumes the width is flexible to set the positions of
+queryByGUI assumes the width is flexible to set the positions of
 left and right edges of the element as specified.
 The case of `upper`, `lower`, and `height` is the same.
 `"baseline"` is useful to align two elements
 as the vertical position of text baselines of them are same.
+
+When there is no element of specified name, queryByGUI outputs
+an error message and quits immediately.
+When the specification is redundant, queryByGUI uses items
+of higher priorities in the order of the above table,
+`width` is the highest, and `baseline` is the lowest.
 
 ## Output text
 The output text from queryByGUI is a sequence of lines,
@@ -202,17 +213,18 @@ in which each line is colon-separated name-value pair.
 The last line indicates which push button was clicked,
 for example, `Clicked:OK` when `OK` button was clicked.
 
-## Examples
+## Example
 
 When you run a shell script
 
 	#! /bin/bash
 	# queryByGUI sample code
 	#
-	queryByGUI << EOF
+	queryByGUI << EOF > /tmp/qBG_$$
 	{"title":"Make a movie file of 720p","height":156,
 	"elements":[
-	  {"type":"text","placeholder":"/Users/***/Movies/***.mov","title":"Source path:",
+	  {"type":"text","placeholder":"/Users/***/Movies/***.mov",
+		"title":"Source path:","mandatory":true,
 	    "upper":"window","left":"window","right":"window","name":"Path"},
 	  {"type":"time","title":"Start skip:","value":"00:00:00",
 	    "upper":"Path","name":"SS"},
@@ -229,7 +241,9 @@ When you run a shell script
 
 a window shown in Figure 1 is displayed.
 When you click the OK button after you operate GUI elements
-as shown in Figure 2, you will get the output text
+as shown in Figure 2, you will get a file at `/tmp/qBG_$$`
+containing the output text as follows, where
+`$$` is replaced with the process ID by bash.
 
 	Path:~/Movies/myAmazingMovie.mov 
 	SS:00:13:04
@@ -241,6 +255,26 @@ as shown in Figure 2, you will get the output text
 |![qBG1](Images/qBG1.jpg)|![qBG2](Images/qBG2.jpg)
 |:--:|:--:|
 |Figure 1.|Figure 2.|
+
+You may continue the shell script code as follows, for example.
+
+	# When Cancel button was clicked, remove output file and quit.
+	if [ `fgrep -q Clicked:Cancel /tmp/qBG_$$; echo $?` -eq 0 ]
+	then rm /tmp/qBG_$$; exit; fi
+	srcPath=`awk -F: '/^Path:/{print $2}' /tmp/qBG_$$`
+	ffmpeg -i $srcPath -s 1280x720\
+	 -ss `awk -F: '/^SS:/{printf "%s:%s:%s",$2,$3,$4}' /tmp/qBG_$$`\
+	 -to `awk -F: '/^ET:/{printf "%s:%s:%s",$2,$3,$4}' /tmp/qBG_$$`\
+	 -y `echo $srcPath | awk -F/ '{OSF="/";$NF="new.mp4";print}'`
+	rm /tmp/qBG_$$
+
+This script is converting a movie file into 1280x720 mpeg4 format
+named `new.mp4` under the same folder with the source movie file
+using `ffmpeg` command.
+
+Instead of typing in the full path by yourself,
+you can drag the `Finder`'s file icon and
+drop it into the text field in order to fill the field with the full path text. 
 
 ---
 &copy; Tatsuo Unemi, 2022. all rights reserved.
